@@ -1,7 +1,10 @@
-import User from './models/user.mjs';
+import User from '../models/user.mjs';
+import { Router } from "express";
 
-// Create User
-app.post('/users', async (req, res) => {
+const userRouter = Router();
+
+// Create User 
+userRouter.post('/users', async (req, res) => {
     try {
       const user = new User(req.body);
       await user.save();
@@ -12,7 +15,7 @@ app.post('/users', async (req, res) => {
   });
   
 // Read Users
-app.get('/users', async (req, res) => {
+userRouter.get('/users', async (req, res) => {
   try {
     const users = await User.find();
     res.status(200).send(users);
@@ -22,7 +25,7 @@ app.get('/users', async (req, res) => {
 });
 
 // Read User by ID
-app.get('/users/:id', async (req, res) => {
+userRouter.get('/users/:id', async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user) {
@@ -34,11 +37,15 @@ app.get('/users/:id', async (req, res) => {
   }
 });
 
+//work on this function
 // Update User
-app.patch('/users/:id', async (req, res) => {
+userRouter.patch('/users/:id', async (req, res) => {
   const updates = Object.keys(req.body);
-  const allowedUpdates = ['username', 'displayName', 'password'];
-  const isValidOperation = updates.every((update) => allowedUpdates.includes(update));
+  const allowedUpdates = ['userName', 'displayName', 'password'];
+  const isValidOperation = updates.every((update) => 
+    {allowedUpdates.includes(update);
+      console.log(update)
+    });
 
   if (!isValidOperation) {
     return res.status(400).send({ error: 'Invalid updates!' });
@@ -60,7 +67,7 @@ app.patch('/users/:id', async (req, res) => {
 });
 
 // Delete User
-app.delete('/users/:id', async (req, res) => {
+userRouter.delete('/users/:id', async (req, res) => {
   try {
     const user = await User.findByIdAndDelete(req.params.id);
 
@@ -74,3 +81,4 @@ app.delete('/users/:id', async (req, res) => {
   }
 });
 
+export default userRouter;

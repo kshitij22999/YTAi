@@ -2,9 +2,7 @@ import express from "express";
 import mongoose from "mongoose";
 import bodyParser from "body-parser";
 import session from "express-session";
-import data from "../demojson/demojson.json" assert { type: "json"};
-import jsonParser from "./services/jsonParser.mjs";
-import fileRouter from "./controllers/fileController.mjs";
+import router from "./controllers/router.mjs";
 
 const PORT = 5050;
 
@@ -23,7 +21,7 @@ app.use(session({
     }
 }));
 app.use(bodyParser.json());
-app.use(fileRouter);
+app.use(router)
 
 //mongoDB Connection
 mongoose.connect('mongodb://localhost:27017/')
