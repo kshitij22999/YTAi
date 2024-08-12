@@ -28,6 +28,7 @@ mongoose.connect('mongodb://localhost:27017/')
 
 
 app.get("/", (req,res) => {
+    res.send(req.session)
     console.log(req.session);
     console.log(req.sessionID)
 })

@@ -1,11 +1,13 @@
 import User from '../models/user.mjs';
 import { Router } from "express";
+import { hashPassword } from '../utilities/helper.mjs';
 
 const userRouter = Router();
 
 // Create User 
 userRouter.post('/users', async (req, res) => {
     try {
+      req.body.password = hashPassword(req.body.password);
       const user = new User(req.body);
       await user.save();
       res.status(201).send(user);
