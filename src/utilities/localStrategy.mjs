@@ -1,7 +1,7 @@
 import passport from "passport";
 import { Strategy } from "passport-local";
 import User from "../models/user.mjs";
-import { passwordValidator } from "../utilities/helper.mjs";
+import { passwordValidator } from "./hashHelper.mjs";
 
 //add user into session data
 passport.serializeUser((user, done)=>{
@@ -16,7 +16,7 @@ passport.deserializeUser(async (id, done)=>{
         done(null, findUser);
     }catch(err){
         done(err, null);
-    } 
+} 
 })
 
 

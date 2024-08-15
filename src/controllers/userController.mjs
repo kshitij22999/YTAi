@@ -1,6 +1,7 @@
 import User from '../models/user.mjs';
 import { Router } from "express";
-import { hashPassword } from '../utilities/helper.mjs';
+import { hashPassword } from '../utilities/hashHelper.mjs';
+import loginChecker from '../utilities/loginChecker.mjs';
 
 const userRouter = Router();
 
@@ -17,10 +18,15 @@ userRouter.post('/users', async (req, res) => {
   });
   
 // Read Users
+
 userRouter.get('/users', async (req, res) => {
   try {
-    const users = await User.find();
-    res.status(200).send(users);
+    if (loginChecker(req)){ //this condition checks if the user is logged in
+      const users = await User.find();
+      return res.status(200).send(users);
+    }else {
+      res.send({mssg:"please login"});
+    } 
   } catch (error) {
     res.status(500).send(error);
   }
