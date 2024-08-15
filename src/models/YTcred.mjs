@@ -1,7 +1,7 @@
 import mongoose from "mongoose"
 
 const YTcreds = new mongoose.Schema({
-    userName: String,
+    username: String,
     client_id: String,
     client_secret: String
 })

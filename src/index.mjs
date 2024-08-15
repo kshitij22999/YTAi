@@ -1,8 +1,10 @@
 import express from "express";
 import mongoose from "mongoose";
-import bodyParser from "body-parser";
 import session from "express-session";
 import router from "./controllers/router.mjs";
+import passport from "passport";
+import "./utilities/localStrategy.mjs"
+import bodyParser from "body-parser";
 
 const PORT = 5050;
 
@@ -12,6 +14,7 @@ app.listen(PORT);
 console.log(`server is running on ${PORT}`)
 
 //middleware
+app.use(bodyParser.json());
 app.use(session({
     secret: 'update the secret',
     saveUninitialized: false,
@@ -20,8 +23,10 @@ app.use(session({
         maxAge: 60000 * 60,
     }
 }));
-app.use(bodyParser.json());
-app.use(router)
+app.use(passport.initialize());
+app.use(passport.session());
+
+app.use(router);
 
 //mongoDB Connection
 mongoose.connect('mongodb://localhost:27017/')
