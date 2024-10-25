@@ -8,17 +8,20 @@ const userRouter = Router();
 // Create User 
 userRouter.post('/users', async (req, res) => {
     try {
+      if (loginChecker(req)){
       req.body.password = hashPassword(req.body.password);
       const user = new User(req.body);
       await user.save();
       res.status(201).send(user);
+      }else {
+        res.send({mssg:"please login"});
+      } 
     } catch (error) {
       res.status(400).send(error);
     }
   });
   
 // Read Users
-
 userRouter.get('/users', async (req, res) => {
   try {
     if (loginChecker(req)){ //this condition checks if the user is logged in
@@ -35,11 +38,15 @@ userRouter.get('/users', async (req, res) => {
 // Read User by ID
 userRouter.get('/users/:id', async (req, res) => {
   try {
+    if (loginChecker(req)){
     const user = await User.findById(req.params.id);
     if (!user) {
       return res.status(404).send();
     }
     res.status(200).send(user);
+  }else {
+    res.send({mssg:"please login"});
+  } 
   } catch (error) {
     res.status(500).send(error);
   }
@@ -48,6 +55,7 @@ userRouter.get('/users/:id', async (req, res) => {
 //work on this function
 // Update User
 userRouter.patch('/users/:id', async (req, res) => {
+  if (loginChecker(req)){
   const updates = Object.keys(req.body);
   const allowedUpdates = ['username', 'displayName', 'password'];
   const isValidOperation = updates.every((update) => 
@@ -72,10 +80,14 @@ userRouter.patch('/users/:id', async (req, res) => {
   } catch (error) {
     res.status(400).send(error);
   }
+}else {
+  res.send({mssg:"please login"});
+} 
 });
 
 // Delete User
 userRouter.delete('/users/:id', async (req, res) => {
+  if (loginChecker(req)){
   try {
     const user = await User.findByIdAndDelete(req.params.id);
 
@@ -87,6 +99,9 @@ userRouter.delete('/users/:id', async (req, res) => {
   } catch (error) {
     res.status(500).send(error);
   }
+}else {
+  res.send({mssg:"please login"});
+} 
 });
 
 export default userRouter;
