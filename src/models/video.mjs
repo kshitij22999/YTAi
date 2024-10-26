@@ -1,11 +1,19 @@
 import mongoose from "mongoose";
 
-const videoData = new mongoose.Schema({
-    username: String,
-    filename: String,
+const videoSchema = new mongoose.Schema({
+    // ... existing fields
+    originalname: String,
     encoding: String,
     mimetype: String,
-})
+    size: Number,
+    s3Key: String,
+    s3Location: String,
+    // Add timestamps
+    uploadedAt: {
+        type: Date,
+        default: Date.now
+    }
+}, { timestamps: true });
 
-const Video = mongoose.model('video', videoData);
+const Video = mongoose.model('video', videoSchema);
 export default Video;
