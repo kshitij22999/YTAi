@@ -1,11 +1,9 @@
 import { Router } from "express";
 import multer from "multer";
 import jsonParser from "../services/jsonParser.mjs";
-import dotenv from "dotenv";
 
 
 const fileRouter = Router();
-dotenv.config();
 
 const upload = multer({
     storage: multer.memoryStorage()

@@ -4,6 +4,7 @@ import pkg from "aws-sdk";
 import dotenv from "dotenv";
 import multer from "multer";
 import { validateVideoUpload } from "../utilities/videoValidator.mjs";
+import loginChecker from '../utilities/loginChecker.mjs';
 
 const videoUploadRouter = Router();
 dotenv.config();
@@ -27,18 +28,18 @@ const s3 = new pkg.S3({
 //endpoint to upload video into s3 bucket
 videoUploadRouter.post('/api/video/upload', upload.single('video'), async (req, res) =>{
     try{
+        if (loginChecker(req)){
         const videoFile = new Video({
             ...req.file,
             uploadedAt: new Date()  // Explicitly set upload time (optional)
         });
 
-        //TODO upload key should be with username-datetime-filename
         // Upload the video to S3
         const isValid = validateVideoUpload(videoFile);
         if(isValid.isValid){
             const params = {
                 Bucket: creds.bucketName,
-                Key: `videos/${Date.now()}-${req.file.originalname}`,
+                Key: `videos/${req.user.username}-${Date.now()}-${req.file.originalname}`,
                 Body: req.file.buffer,
                 ContentType: req.file.mimetype
             };
@@ -72,7 +73,9 @@ videoUploadRouter.post('/api/video/upload', upload.single('video'), async (req, 
                     });
             }
         }
-        
+    }else {
+        res.status(401).json({mssg:"please login"});
+      } 
     }
     catch (error) {
         console.error('Error uploading video:', error);

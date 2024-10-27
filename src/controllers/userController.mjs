@@ -1,6 +1,6 @@
 import User from '../models/user.mjs';
 import { Router } from "express";
-import { hashPassword } from '../utilities/hashHelper.mjs';
+import { hashPassword, passwordValidator } from '../utilities/hashHelper.mjs';
 import loginChecker from '../utilities/loginChecker.mjs';
 
 const userRouter = Router();
@@ -14,7 +14,7 @@ userRouter.post('/users', async (req, res) => {
       await user.save();
       res.status(201).send(user);
       }else {
-        res.send({mssg:"please login"});
+        res.status(401).json({mssg:"please login"});
       } 
     } catch (error) {
       res.status(400).send(error);
@@ -28,7 +28,7 @@ userRouter.get('/users', async (req, res) => {
       const users = await User.find();
       return res.status(200).send(users);
     }else {
-      res.send({mssg:"please login"});
+      res.status(401).json({mssg:"please login"});
     } 
   } catch (error) {
     res.status(500).send(error);
@@ -45,7 +45,7 @@ userRouter.get('/users/:id', async (req, res) => {
     }
     res.status(200).send(user);
   }else {
-    res.send({mssg:"please login"});
+    res.status(401).json({mssg:"please login"});
   } 
   } catch (error) {
     res.status(500).send(error);
@@ -81,7 +81,7 @@ userRouter.patch('/users/:id', async (req, res) => {
     res.status(400).send(error);
   }
 }else {
-  res.send({mssg:"please login"});
+  res.status(401).json({mssg:"please login"});
 } 
 });
 
@@ -100,8 +100,41 @@ userRouter.delete('/users/:id', async (req, res) => {
     res.status(500).send(error);
   }
 }else {
-  res.send({mssg:"please login"});
+  res.status(401).json({mssg:"please login"});
 } 
+});
+
+// Password reset route
+userRouter.post('/users/reset-password', async (req, res) => {
+  try {
+    if (loginChecker(req)){
+      const { currentPassword, newPassword } = req.body;
+      
+      // Get the user from the database
+      const user = await User.findById(req.user.id);
+      
+      if (!user) {
+          return res.status(404).json({ message: "User not found" });
+      }
+
+      // Check if the current password is correct
+      const isMatch = passwordValidator(currentPassword, user.password);
+      if (!isMatch) {
+          return res.status(400).json({ message: "Current password is incorrect" });
+      }
+
+      // Update the user's password
+      user.password = hashPassword(newPassword);
+      await user.save();
+
+      res.json({ message: "Password updated successfully" });
+    }else {
+      res.status(401).json({mssg:"please login"});
+    } 
+  } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: "Server error" });
+  }
 });
 
 export default userRouter;
