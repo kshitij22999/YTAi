@@ -26,6 +26,8 @@ const s3 = new pkg.S3({
 
 
 //endpoint to upload video into s3 bucket
+//TODO to implement live video upload status and show progress on ui with a progress bar
+//TODO implement multipart upload using promises, s3.createMultipartUpload
 videoUploadRouter.post('/api/video/upload', upload.single('video'), async (req, res) =>{
     try{
         if (loginChecker(req)){
@@ -85,5 +87,25 @@ videoUploadRouter.post('/api/video/upload', upload.single('video'), async (req, 
         });
     }
 });
+
+// notification endpoint when job is finished will get called
+// work on further processs after job completion
+// upadate the url in rules once application is hosted
+videoUploadRouter.post('/api/video/transcibe/notification', async (req, res) => {
+    const event = req.body;
+
+    if (event.detail.TranscriptionJobStatus === 'COMPLETED') {
+        const jobName = event.detail.TranscriptionJobName;
+        const bucketName = event.detail.OutputBucketName;
+        const fileKey = event.detail.OutputKey;
+
+        // Process further with the job details, e.g., retrieve the SRT file from S3
+
+        res.status(200).send('Job processed successfully');
+    } else {
+        res.status(200).send('No action needed');
+    }
+})
+
 
 export default videoUploadRouter;
