@@ -4,14 +4,14 @@ import path from "path";
 dotenv.config();
 
 export const validateVideoUpload = (file) => {
-    const maxSize = process.env.max_video_size; // 50MB in bytes
+    const maxSize = process.env.max_video_size; // 100MB in bytes
     const allowedExtensions = ['.mp4'];
 
     // Check file size
     if (file.size > maxSize) {
         return { 
             isValid: false, 
-            error: 'File size exceeds 50MB limit.' 
+            error: 'File size exceeds 100MB limit.' 
         };
     }
     

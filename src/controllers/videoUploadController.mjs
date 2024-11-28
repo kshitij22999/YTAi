@@ -24,6 +24,63 @@ const s3 = new pkg.S3({
     secretAccessKey: creds.secret
 });
 
+const transcribeService = new pkg.TranscribeService({
+    accessKeyId: creds.accessKey,
+    secretAccessKey: creds.secret,
+    region: process.env.aws_region
+});
+
+// Function to perform multipart upload
+async function multipartUpload(params) {
+    return new Promise((resolve, reject) => {
+        const { Body, ...createParams } = params; // Separate Body from other params
+
+        s3.createMultipartUpload(createParams, (err, multipart) => {
+            if (err) return reject(err);
+            
+            const partSize = 5 * 1024 * 1024; // 5MB chunks
+            const partCount = Math.ceil(Body.length / partSize);
+
+            let promisesArray = [];
+
+            for (let i = 0; i < partCount; i++) {
+                const start = i * partSize;
+                const end = Math.min(start + partSize, Body.length);
+
+                promisesArray.push(
+                    s3.uploadPart({
+                        Body: Body.slice(start, end),
+                        Bucket: params.Bucket,
+                        Key: params.Key,
+                        PartNumber: i + 1,
+                        UploadId: multipart.UploadId
+                    }).promise()
+                );
+            }
+
+            Promise.all(promisesArray)
+                .then((parts) => {
+                    const multipartParams = {
+                        Bucket: params.Bucket,
+                        Key: params.Key,
+                        MultipartUpload: {
+                            Parts: parts.map((part, index) => ({
+                                ETag: part.ETag,
+                                PartNumber: index + 1
+                            }))
+                        },
+                        UploadId: multipart.UploadId
+                    };
+
+                    s3.completeMultipartUpload(multipartParams, (err, data) => {
+                        if (err) reject(err);
+                        else resolve(data);
+                    });
+                })
+                .catch(reject);
+        });
+    });
+}
 
 //endpoint to upload video into s3 bucket
 //TODO to implement live video upload status and show progress on ui with a progress bar
@@ -45,8 +102,8 @@ videoUploadRouter.post('/api/video/upload', upload.single('video'), async (req, 
                 Body: req.file.buffer,
                 ContentType: req.file.mimetype
             };
-    
-            const s3UploadResult = await s3.upload(params).promise();
+            
+            const s3UploadResult = await multipartUpload(params);
     
             // Save video metadata to database
             videoFile.s3Key = s3UploadResult.Key;
@@ -83,7 +140,8 @@ videoUploadRouter.post('/api/video/upload', upload.single('video'), async (req, 
         console.error('Error uploading video:', error);
         res.status(500).json({
             message: 'Error uploading video',
-            error: error.message
+            error: error.message,
+            errorCode: error.code
         });
     }
 });
@@ -100,8 +158,30 @@ videoUploadRouter.post('/api/video/transcibe/notification', async (req, res) => 
         const fileKey = event.detail.OutputKey;
 
         // Process further with the job details, e.g., retrieve the SRT file from S3
+        console.log(jobName);
+        try {
+            // Get the transcription job details
+            const params = {
+                TranscriptionJobName: jobName
+            };
+            const jobDetails = await transcribeService.getTranscriptionJob(params).promise();
 
-        res.status(200).send('Job processed successfully');
+            // Process the job details
+            console.log('Transcription job details:', jobDetails);
+
+
+
+            res.status(200).json({
+                message: 'Transcription job processed successfully',
+                jobDetails: jobDetails.TranscriptionJob
+            });
+        } catch (error) {
+            console.error('Error processing transcription job:', error);
+            res.status(500).json({
+                message: 'Error processing transcription job',
+                error: error.message
+            });
+        }
     } else {
         res.status(200).send('No action needed');
     }
