@@ -5,6 +5,7 @@ import dotenv from "dotenv";
 import multer from "multer";
 import { validateVideoUpload } from "../utilities/videoValidator.mjs";
 import loginChecker from '../utilities/loginChecker.mjs';
+import generateVideoData from "../services/openAI.mjs";
 
 const videoUploadRouter = Router();
 dotenv.config();
@@ -29,6 +30,7 @@ const transcribeService = new pkg.TranscribeService({
     secretAccessKey: creds.secret,
     region: process.env.aws_region
 });
+
 
 // Function to perform multipart upload
 async function multipartUpload(params) {
@@ -154,11 +156,7 @@ videoUploadRouter.post('/api/video/transcibe/notification', async (req, res) => 
 
     if (event.detail.TranscriptionJobStatus === 'COMPLETED') {
         const jobName = event.detail.TranscriptionJobName;
-        const bucketName = event.detail.OutputBucketName;
-        const fileKey = event.detail.OutputKey;
 
-        // Process further with the job details, e.g., retrieve the SRT file from S3
-        console.log(jobName);
         try {
             // Get the transcription job details
             const params = {
@@ -167,9 +165,20 @@ videoUploadRouter.post('/api/video/transcibe/notification', async (req, res) => 
             const jobDetails = await transcribeService.getTranscriptionJob(params).promise();
 
             // Process the job details
-            console.log('Transcription job details:', jobDetails);
+            const fileKey = jobDetails?.TranscriptionJob?.Transcript?.TranscriptFileUri;
 
+            // Download the JSON file from S3
+            const s3Params = {
+                Bucket: creds.bucketName,
+                Key: `srt/${fileKey.substring(fileKey.lastIndexOf('/') + 1)}`
+            };
+            const s3Data = await s3.getObject(s3Params).promise();
+            const rawJsonContent = JSON.parse(s3Data.Body.toString());
 
+            //console.log(rawJsonContent.results.transcripts[0].transcript);
+            //check chatgpt history chats
+            const openAIresponse = await generateVideoData(rawJsonContent.results.transcripts[0].transcript);
+            console.log(openAIresponse);
 
             res.status(200).json({
                 message: 'Transcription job processed successfully',
